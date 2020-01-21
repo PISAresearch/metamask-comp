@@ -2,7 +2,6 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol";
-import "./DomainSeparator.sol";
 
 contract BitFlipMetaTransactionWithOrdering is DomainSeparator {
     mapping(address => mapping(uint => uint)) public bitmaps;
@@ -11,18 +10,18 @@ contract BitFlipMetaTransactionWithOrdering is DomainSeparator {
     /**
      * Supports up to 256 concurrent transactions.
      * Supports ordered transactions by nonce.
-     * @param _EIP712Domain EIP712 Domain
+
      * @param _signer Approver's address
-     * @param _h Application-specific content
+     * @param _msgHash Application-specific content
      * @param _nonce Bitmap nonce
      * @param _toFlip Bit in the bitmap
      * @param _sig Signature
      */
-    function isMetaTransactionApproved(string memory _EIP712Domain, bytes32 _h, address _signer, uint _nonce,
+    function isMetaTransactionApproved(bytes32 _msgHash, address _signer, uint _nonce,
     uint _toFlip, bytes memory _sig) public {
 
         // EIP712 can be included in "h", no need to enforce in standard.
-        bytes32 h = keccak256(abi.encode(this.getDomainSeparator(_EIP712Domain), (this), _h, _nonce, _toFlip));
+        bytes32 h = keccak256(abi.encode(address(this), _msgHash, _nonce, _toFlip));
         require(_signer == ECDSA.recover(ECDSA.toEthSignedMessageHash(h), _sig), "Bad signature");
         require(bitmaps[_signer][_nonce] & _toFlip != _toFlip, "Nonce already flipped.");
         require(_nonce == nonces[_signer] || _nonce == nonces[_signer]+1, "Nonce must be the same or incremented by one");

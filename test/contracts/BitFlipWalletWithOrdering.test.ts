@@ -18,7 +18,6 @@ chai.use(solidity);
 describe("Replay Protection with optional ordering", () => {
   const provider = createMockProvider();
   const [wallet] = getWallets(provider);
-  const EIP712Domain = "functionName";
 
   async function deployBroadcaster(provider: Provider, [signer]: Wallet[]) {
     const broadcaster = await deployContract(
@@ -75,9 +74,8 @@ describe("Replay Protection with optional ordering", () => {
 
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["bytes32", "address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "uint", "uint"],
       [
-        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
@@ -87,7 +85,6 @@ describe("Replay Protection with optional ordering", () => {
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
-      EIP712Domain,
       "0x0000000000000000000000000000000000000000000000000000000000000000",
       signer.address,
       nonce,
@@ -108,23 +105,19 @@ describe("Replay Protection with optional ordering", () => {
 
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["bytes32", "address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "uint", "uint"],
       [
-        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
         bitmap
       ]
     );
-
-    const domainEncoded = defaultAbiCoder.encode;
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
 
     await expect(
       broadcaster.isMetaTransactionApproved(
-        EIP712Domain,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         signer.address,
         nonce,
@@ -164,9 +157,8 @@ describe("Replay Protection with optional ordering", () => {
 
     // Signer issues a command for the 0th index of the nonce
     let encoded = defaultAbiCoder.encode(
-      ["bytes32", "address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "uint", "uint"],
       [
-        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
@@ -176,7 +168,6 @@ describe("Replay Protection with optional ordering", () => {
     let h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
-      EIP712Domain,
       "0x0000000000000000000000000000000000000000000000000000000000000000",
       signer.address,
       nonce,
@@ -191,7 +182,6 @@ describe("Replay Protection with optional ordering", () => {
     // Should fail as bitmap is already set
     await expect(
       broadcaster.isMetaTransactionApproved(
-        EIP712Domain,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         signer.address,
         nonce,
@@ -260,9 +250,8 @@ describe("Replay Protection with optional ordering", () => {
 
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["bytes32", "address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "uint", "uint"],
       [
-        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
@@ -274,7 +263,6 @@ describe("Replay Protection with optional ordering", () => {
 
     await expect(
       broadcaster.isMetaTransactionApproved(
-        EIP712Domain,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         signer.address,
         nonce,
@@ -307,6 +295,10 @@ describe("Replay Protection with optional ordering", () => {
     expect(
       await broadcaster.isBitmapSet(signer.address, new BigNumber("1"), oldFlip)
     ).to.be.false;
+  }).timeout(5000);
+
+  it("new nonce (nonce=2) accepted, and bitmap for nonce=1 wiped. ", async () => {
+    const { signer, broadcaster } = await loadFixture(flip5And10And225);
   }).timeout(5000);
 
   /**
