@@ -7,7 +7,7 @@ import {
   getWallets,
   loadFixture
 } from "ethereum-waffle";
-import * as Broadcaster from "../../build/Broadcaster.json";
+import * as Broadcaster from "../../build/BroadcasterWithOrdering.json";
 import { BigNumber, arrayify, defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Provider, JsonRpcProvider } from "ethers/providers";
 import { Wallet, Contract } from "ethers";
@@ -15,9 +15,10 @@ import { Wallet, Contract } from "ethers";
 const expect = chai.expect;
 chai.use(solidity);
 
-describe("Replay Protection", () => {
+describe("Replay Protection with optional ordering", () => {
   const provider = createMockProvider();
   const [wallet] = getWallets(provider);
+  const EIP712Domain = "functionName";
 
   async function deployBroadcaster(provider: Provider, [signer]: Wallet[]) {
     const broadcaster = await deployContract(
@@ -34,7 +35,8 @@ describe("Replay Protection", () => {
 
   async function flip5And10And225(provider: Provider, [signer]: Wallet[]) {
     const { broadcaster } = await deployBroadcaster(provider, [signer]);
-
+    // Fresh nonce
+    const nonce = new BigNumber("1");
     const toFlip = [
       new BigNumber("5"),
       new BigNumber("10"),
@@ -44,9 +46,6 @@ describe("Replay Protection", () => {
     let bitmap = new BigNumber("0");
 
     for (let i = 0; i < toFlip.length; i++) {
-      // Fresh nonce
-      const nonce = new BigNumber("1");
-
       const flipped = await setupFlip(
         nonce,
         bitmap,
@@ -76,8 +75,9 @@ describe("Replay Protection", () => {
 
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+      ["bytes32", "address", "bytes32", "uint", "uint"],
       [
+        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
@@ -87,6 +87,7 @@ describe("Replay Protection", () => {
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
+      EIP712Domain,
       "0x0000000000000000000000000000000000000000000000000000000000000000",
       signer.address,
       nonce,
@@ -107,19 +108,23 @@ describe("Replay Protection", () => {
 
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+      ["bytes32", "address", "bytes32", "uint", "uint"],
       [
+        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
         bitmap
       ]
     );
+
+    const domainEncoded = defaultAbiCoder.encode;
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
 
     await expect(
       broadcaster.isMetaTransactionApproved(
+        EIP712Domain,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         signer.address,
         nonce,
@@ -159,8 +164,9 @@ describe("Replay Protection", () => {
 
     // Signer issues a command for the 0th index of the nonce
     let encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+      ["bytes32", "address", "bytes32", "uint", "uint"],
       [
+        await broadcaster.getDomainSeparator(EIP712Domain),
         broadcaster.address,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         nonce,
@@ -170,6 +176,7 @@ describe("Replay Protection", () => {
     let h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
+      EIP712Domain,
       "0x0000000000000000000000000000000000000000000000000000000000000000",
       signer.address,
       nonce,
@@ -184,6 +191,7 @@ describe("Replay Protection", () => {
     // Should fail as bitmap is already set
     await expect(
       broadcaster.isMetaTransactionApproved(
+        EIP712Domain,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
         signer.address,
         nonce,
@@ -227,7 +235,7 @@ describe("Replay Protection", () => {
     const { signer, broadcaster } = await loadFixture(flip5And10And225);
 
     // Flip the 0th index.
-    const nonce = new BigNumber("1");
+    const nonce = new BigNumber("0");
     let bitmap = new BigNumber("0");
 
     const toFlip = [5, 11, 252];
@@ -239,6 +247,66 @@ describe("Replay Protection", () => {
     // Issue the command like a boyo.
     expect(await broadcaster.isBitmapSet(signer.address, nonce, bitmap)).to.be
       .false;
+  }).timeout(5000);
+
+  it("meta-transaction failed as nonce is too far in future (nonce=3)", async () => {
+    const { signer, broadcaster } = await loadFixture(flip5And10And225);
+
+    // Flip the 0th index.
+    const nonce = new BigNumber("3");
+    const bitmap = new BigNumber("0");
+    const indexToFlip = new BigNumber("44");
+    const flipped = flipBit(bitmap, indexToFlip);
+
+    // Signer issues a command for the 0th index of the nonce
+    const encoded = defaultAbiCoder.encode(
+      ["bytes32", "address", "bytes32", "uint", "uint"],
+      [
+        await broadcaster.getDomainSeparator(EIP712Domain),
+        broadcaster.address,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        nonce,
+        flipped
+      ]
+    );
+    const h = keccak256(encoded);
+    const sig = await signer.signMessage(arrayify(h));
+
+    await expect(
+      broadcaster.isMetaTransactionApproved(
+        EIP712Domain,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        signer.address,
+        nonce,
+        flipped,
+        sig
+      )
+    ).to.be.reverted;
+  }).timeout(5000);
+
+  it("new nonce (nonce=2) accepted, and bitmap for nonce=1 wiped. ", async () => {
+    const { signer, broadcaster } = await loadFixture(flip5And10And225);
+
+    // Flip the 0th index.
+    const nonce = new BigNumber("2");
+    const bitmap = new BigNumber("0");
+    const indexToFlip = new BigNumber("44");
+    const flipped = await setupFlip(
+      nonce,
+      bitmap,
+      indexToFlip,
+      broadcaster,
+      signer
+    );
+
+    expect(await broadcaster.isBitmapSet(signer.address, nonce, flipped)).to.be
+      .true;
+
+    // Lets check if '5' for nonce 1 is still flipped
+    const oldFlip = flipBit(new BigNumber("1"), new BigNumber("5"));
+    expect(
+      await broadcaster.isBitmapSet(signer.address, new BigNumber("1"), oldFlip)
+    ).to.be.false;
   }).timeout(5000);
 
   /**
