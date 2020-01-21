@@ -7,7 +7,7 @@ import {
   getWallets,
   loadFixture
 } from "ethereum-waffle";
-import * as BitFlipWalletJson from "../build/BitFlipWallet.json";
+import * as BitFlipWalletJson from "../../build/BitFlipWallet.json";
 import { BigNumber, arrayify, defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Provider, JsonRpcProvider } from "ethers/providers";
 import { Wallet, Contract } from "ethers";

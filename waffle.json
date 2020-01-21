@@ -1,4 +1,5 @@
 {
     "compiler": "dockerized-solc",
-    "docker-tag": "0.5.11"
+    "docker-tag": "0.5.11",
+    "sourcesPath": "./src/contracts"
 }

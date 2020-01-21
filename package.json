@@ -3,10 +3,11 @@
     "build-test": "npm run build && npm run test",
     "build": "waffle waffle.json && npm run build-types",
     "build-types": "typechain --target ethers --outDir ./build ./build/**/*.json",
-    "test": "NODE_ENV=test mocha --require ts-node/register --extension 'test.ts' './test/*.test.ts' --exit"
+    "test": "NODE_ENV=test mocha --require ts-node/register --extension 'test.ts' './test/**/*.test.ts' --exit"
   },
   "devDependencies": {
     "@types/chai": "^4.2.7",
+    "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "ethereum-waffle": "^2.3.0",
     "ethers": "^4.0.43",
@@ -17,8 +18,5 @@
     "typechain-target-ethers": "^1.0.3",
     "typescript": "^3.7.5"
   },
-  "dependencies": {
-    "@types/mocha": "^5.2.7",
-    "convert-base": "^0.1.0"
-  }
+  "dependencies": {}
 }
