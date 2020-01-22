@@ -1,35 +1,160 @@
-# metamask-comp
+# MetaMask Competition: Towards a meta-transaction standard
 
-tldr; We propose three different replay protection mechanisms. Afterwards we give an overview of the any.sender replay strategy. 
+tldr; We propose a single function, isMetaTransactionApproved(), that can be included in any smart contract. We have three replay protection protocols that can be implemented in the function. We also provide an overview of the any.sender architecture and replay strategy. 
 
 ## Problem Statement
 
-A meta-transaction lets a third party, relayer, to pay the gas price on behalf of someone else, the signer. It is useful when a user does not have access to the network’s native token (e.g. ether), but they want to perform some execution the network (e.g. transfer an ERC20 token).  
+A meta-transaction lets a third party, the relayer, to pay the gas fee on behalf of someone else, the signer. This is useful when the user lacks access to the network's native token (e.g. ether), but they want to perform some execution on the network (e.g. transfer an ERC20 token). The problem focuses on how a dapp developer can make minimal changes to their smart contract in order to support meta-transactions. 
 
-This competition seeks to propose a new standard function, isMetaTransactionApproved, that can be included in any new smart contract. 
+## Standard Approach: Replace-by-version
 
-## Standard Approach 
+To the best of our knowledge, the standard approach for replay protection is to increment a nonce for every new transaction message. Generally speaking, the contract stores the latest nonce: 
 
+```mapping(address => uint) nonces```
 
-To the best of our knowledge, the standard way to support meta-transactions is to have a user sign the following message: 
+The user will sign a message that is forwarded to the relayer: 
 
-``` Sig = Sign(nonce, contractAddress, calldata). ```
+``` user_sig = Sign(nonce, contractID, data). ```
 
-And for the contract to maintain a mapping of nonces: 
+The relayer will submit the user's signature, nonce and calldata to the meta-transaction enabled smart contract: 
 
-``` mapping(address => uint) nonces ```
+```
+function performAction(string _data, uint _nonce, address _user, bytes _user_sig) public { 
+
+   /// Verify the user's signature 
+   require(verifySig(_user, nonce, data, _user_sig));
+   
+   // Check the nonce is largest seen so far
+   require(_nonce > nonces[user]);
+   
+   // Store nonce and perform action
+   nonces[_user] =_nonce; 
+   
+   // Rest of code using _data 
+
+}
+
+```
+
+The nonce approach is easy with minimal storage (256-bits), but it requires all meta-transactions to be processed one-by-one. This is problematic for several applications, namely withdrawals, benefit greatly from concurrent transactions. 
+
 
 ## Our contribution 
 
 We propose three approaches for replay protection of meta-transactions, but with a twist: 
 
-* **Bitflip:** Smart contract maintains a bitmap and every new meta-transaction will flip a bit in the map. 
-* **Bitflip with ordering:** Smart contract maintains a 256-bit bitmap that can be reset. Supports up to 256 concurrent transactions before a new nonce is required. 
-* **MultiNonce** Supports unlimited concurrent transactions, but requires a storage overhead. 
+* **Bitflip:** The smart contract has a bitmap and every meta-transaction will flip a bit in the map. 
+* **Bitflip with ordering:** Again, the smart contract maintains a 256-bit bitmap and it will reset the bitmap when 256 meta-transactions are processed. Supports up to 256 meta-transactions at a time, in any order.
+* **MultiNonce** Supports unlimited concurrent and ordered transactions, but its storage overhead is 512-bit for each concurrent transaction. 
+
+We'll go through each proposal one-by-one with a high-level description and links to the code. 
 
 ## Proposal 1: Bitflip 
 
+The replay protection contract stores a list of bitmaps: 
+
+```
+mapping(uint => uint) bitmaps; 
+
+bitmaps[index] = 0000000......0000000000;
+```
+
+Every meta-transaction has a bitmap with a single flipped bit and the contract will perform two bitwise oeprations: 
+
+- AND (&) to verify if the fit is already flipped. 
+- OR (|) to flip the bit in the contract's bitmap. 
+
+The benefit of the Bitflip approach is that it supports concurrent in-flight meta-transactions as each job will simply flip their reserved bit. 
+
+### Reminder of bitwise operations
+
+Just a reminder of the bitwise operations: 
+
+``` 
+AND: Both bits must be 1 to be true
+OR: At least one of the bits have to be 1 (true)
+```
+
+### What do we send to the smart contract? 
+
+The user needs to sign the bitmap index, the flipped bit, and of course the contractID + data. 
+
+``` user_sig = Sign(index, toFlip, contractID, h(data)). ```
+
+The replay protection can then be called: 
+
+```
+isMetaTransactionApproved(bytes32 _h, address _signer, uint _index, uint _toFlip, bytes memory _sig) public {
+```
+
+It will throw an exception if the metatransaction is not approved or if it is replayed. 
+
+### How to verify on-chain that a bit is not flipped
+
+We use the following AND operation to check if the bitmap is flipped:
+
+``` require(bitmap & toFlip != toFlip) ``` 
+
+We'll consider three cases below to illustrate that the verification will always pass if toFlip has at least one bit that is not already flipped on-chain. 
+
+*Case 1: * All bits for toFlip have already been flipped. e.g. malicious replay. 
+
+```
+bitmap: 000000100000010000
+toFlip: 000000000000010000
+AND:    000000000000010000
+```
+
+Due to the AND operation, toFlip == AND, so our precondition will reject it. 
+
+
+*Case 2:* toFlip has a bit that has not yet been flipped on-chain: 
+
+```
+bitmap: 000000100000010000
+toFlip: 000000000100000000
+AND:    000000000000000000
+```
+
+It can clearly be seen that toFlip != AND, so the contract can easily verify that a flip needs to be flipped (and thus the meta-transaction to be executed). 
+
+*Case 3:* Attacker tries to mix up flipped and non-flipped bits. 
+
+```
+bitmap: 000000100000010000
+toFlip: 000000100100000000
+AND:    000000100000000000
+```
+
+Clearly, toFlip != AND, so there are some bits that still need to be flipped. All the attacker will do is waste their bits, e.g. flip more than 1 bit at a time. 
+
+### How to perform the on-chain flip 
+
+To perform the flip, we just use the OR operation: 
+
+```
+bitmap: 000000100000010000
+toFlip: 000000000100000000
+OR:     000000100100010000
+```
+
+The OR operation bitmap will simply flip bits if at least 1 bit is "1" in bitmap or "toflip", so it effectively aggregates it. Easy. 
+
+``` 
+bitmaps[_signer][_index] = bitmaps[_signer][_index] | _toFlip;
+```
+
+
 ## Proposal 2: Bitflip with ordering 
+
+The replay protection contract stores a list of bitmaps: 
+
+```
+mapping(uint => uint) bitmaps; 
+
+bitmaps[index] = 0000000......0000000000;
+```
+
 
 ## Proposal 3: Multinonce 
 
