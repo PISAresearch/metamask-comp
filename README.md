@@ -154,7 +154,7 @@ The continuous capacity sounds like a weird problem. But it is a real problem. F
 
 ### MultiNonce 
 
-Of course, we can fix the problem with continuous capacity (otherweise we wouldn't mention it, jk). 
+Of course, we can fix the problem with continuous capacity (otherwise we would not mention it, jk). 
 
 This replay protection contract stores a single mapping for nonce -> nonce. 
 
@@ -167,17 +167,17 @@ When authorising a new meta-transaction, we can decide to increment nonce1 or no
 ```
 bytes _h = "0x0...";
 address signer = "0x0....":
-uint nonce1 (index) = 0;
-uint nonce2 (bitmap) = "0000000000100000"; 
+uint nonce1 = 0;
+uint nonce2 = "10"; 
 bytes sig = "0x00....";
 
 ```
 
-But what does it mean to increment nonce1 or nonce1? 
+The meta-transaction in the above example his is the 10th transaction for concurrent slot 0. But what does that really mean? 
  - Nonce 1: We increase the capacity of our concurrent transactions 
  - Nonce 2: Replace-by-version, we just process the meta-transactions in order. 
  
-If we want to fulfil 40 concurrent and in-flight meta-transactions at any time, then we use the slots 0,...,40 for nonce1. Every tiem a new meta-transaction is confirmed for nonce1:nonce2, we can simply increment nonce2 with a new job. 
+What if we want to fulfil 40 concurrent and in-flight meta-transactions at any time, then we use the slots (nonce1) 0,...,40 and every time a new-metatransaction is confirmed for a slot, we simply increment nonce2. 
 
 Benefits:
 - *Concurrent tx:* We can support any number of concurrent transactions.
