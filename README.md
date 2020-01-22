@@ -140,7 +140,7 @@ if(_nonce == nonces[_signer]+1) {
 ```
 
 Benefits: 
-- *Constant straoge:* Only 3 uints per user. One for the largest nonce so far, and one for the mapping to the bitmap. 
+- *Constant storage:* Only 3 uints per user. One for the largest nonce so far, and one for the mapping to the bitmap. 
 - *Ordered transactions:* Just increment the nonce for every new transaction. 
 - *Concurrent transactions:* Up to 256 concurrent and in-flight meta transactions at a time. 
 - *Invalidate transactions:* Can invalidate issued meta-transactions by incrementing the nonce (e.g. increment to nonce=3, then the bitmap for nonce=2 are now invalid). 
@@ -148,15 +148,47 @@ Benefits:
 Problems: 
 - *Continuous capacity:* Cannot sustain a maximum concurrent capacity (e.g. 256 concurrent in-flight transactions at all times). 
 
+The continuous capacity sounds like a weird problem. But it is a real problem. For example, an exchange may wish to process ~100 withdrawals at any given time, we need a method that can sustain that throughput. While the original bitflip can do it, there is another approach that can achieve constant storage costs... 
+
 [Check the detailed writeup alongside the contract implementation.](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/BitFlipWithOrderingMetaTransaction)
 
 ### MultiNonce 
 
-Of course, as demonstrated in our implementation, all replay protections can be extended to multi-user by modifying the mapping:
+Of course, we can fix the problem with continuous capacity (otherweise we wouldn't mention it, jk). 
+
+This replay protection contract stores a single mapping for nonce -> nonce. 
 
 ```
 mapping(address => mapping(uint => uint)) nonces; 
 ```
+
+When authorising a new meta-transaction, we can decide to increment nonce1 or nonce2. 
+
+```
+bytes _h = "0x0...";
+address signer = "0x0....":
+uint nonce1 (index) = 0;
+uint nonce2 (bitmap) = "0000000000100000"; 
+bytes sig = "0x00....";
+
+```
+
+But what does it mean to increment nonce1 or nonce1? 
+ - Nonce 1: We increase the capacity of our concurrent transactions 
+ - Nonce 2: Replace-by-version, we just process the meta-transactions in order. 
+ 
+If we want to fulfil 40 concurrent and in-flight meta-transactions at any time, then we use the slots 0,...,40 for nonce1. Every tiem a new meta-transaction is confirmed for nonce1:nonce2, we can simply increment nonce2 with a new job. 
+
+Benefits:
+- *Concurrent tx:* We can support any number of concurrent transactions.
+- *Continuous concurrency:* We can sustain a capacity of concurrent transactions at any given time. 
+- *Ordered transactions:* We can simply default to the standard Nonce approach for a given slot. So all meta-transactions for a given nonce1 will be ordered. 
+- *Invalidate transactions:* We can invalidate transactions by simply re-using the nonce1 & nonce2 for another meta-transaction. 
+
+Problems: 
+- *Constant and high storage cost:* Two units for an additional concurrent transaction. 
+
+[Check the detailed writeup alongside the contract implementation.](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/MultiNonceMetaTransaction)
 
 ## Discussion & Comparison 
 
