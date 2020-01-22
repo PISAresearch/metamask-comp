@@ -166,16 +166,17 @@ The problem with the Bitflip approach:
 
 Our second proposal, Bitflip with ordering, tries to combine the best of both worlds for Nonce and Bitflip. 
 
+### Record latest nonce and bitmap 
+
 The replay protection contract stores a mapping of the bitmaps and a mapping for the latest nonce: 
 
 ```
-mapping(uint => uint) bitmaps; 
+mapping(address => mapping(uint => uint)) bitmaps; 
 mapping(address => uint) nonces; 
 
 bitmaps[nonce1] = 0000000......0000000000;
 ```
 
-Again, both checking if a bit is flipped and flipping the bit is identical to the first Bitflip proposal. 
 
 ### Enforcing order for meta-transactions
 
@@ -198,11 +199,11 @@ As a result, there is only one bitmap in action at any time. So the replay prote
 - Ordered transactions (1,2,3....,)
 - 256 concurrent and in-flight meta-transactions 
 
-We had a demo of how to change this into a sliding-window approach to support more than 256 concurrent transactions, but it doesn't explain the idea as clearly as above. 
-
+We have a demo on how to extend it into a sliding-window approach to support more than 256 concurrent transactions, but it doesn't explain the idea as clearly as above. 
 
 ## Proposal 3: Multinonce 
 
+The bitflip with ordering approach only requires the latest nonce and a single bitmap. 
 
 
 
