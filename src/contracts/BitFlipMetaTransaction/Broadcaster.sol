@@ -8,8 +8,8 @@ contract Broadcaster is BitFlipMetaTransaction {
 
     event PublicBroadcast(string message);
 
-    function publicBroadcast(string memory _message, address _addr, uint _index, uint _toFlip, bytes memory _sig) public {
-        isMetaTransactionApproved(keccak256(abi.encode(_message)), _addr, _index, _toFlip, _sig);
+    function publicBroadcast(string memory _message, address _addr, uint _nonce1, uint _nonce2, bytes memory _sig) public {
+        isMetaTransactionApproved(keccak256(abi.encode(_message)), _addr, _nonce1, _nonce2, _sig);
 
         emit PublicBroadcast(_message);
     }

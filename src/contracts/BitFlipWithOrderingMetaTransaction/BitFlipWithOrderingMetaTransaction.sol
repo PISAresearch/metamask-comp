@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol";
 
-contract BitFlipMetaTransactionWithOrdering is DomainSeparator {
+contract BitFlipMetaWithOrderingTransaction {
     mapping(address => mapping(uint => uint)) public bitmaps;
     mapping(address => uint) public nonces;
 
