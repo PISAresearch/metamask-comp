@@ -41,9 +41,9 @@ The nonce approach is easy with minimal storage (256-bits), but it requires all 
 
 We propose three approaches for replay protection of meta-transactions, but with a twist: 
 
-* **(Bitflip:)[https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/BitFlipMetaTransaction/README.md]** The smart contract has a bitmap and every meta-transaction will flip a bit in the map. 
-* **(Bitflip with ordering:)[https://github.com/PISAresearch/metamask-comp/blob/master/src/contracts/BitFlipWithOrderingMetaTransaction/README.md]** Again, the smart contract maintains a 256-bit bitmap and it will reset the bitmap when 256 meta-transactions are processed. Supports up to 256 meta-transactions at a time, in any order.
-* **(MultiNonce:)[https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/MultiNonceMetaTransaction]** Supports unlimited concurrent and ordered transactions, but its storage overhead is 512-bit for each concurrent transaction. 
+* **[Bitflip:](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/BitFlipMetaTransaction/README.md)** The smart contract has a bitmap and every meta-transaction will flip a bit in the map. 
+* **[Bitflip with ordering:](https://github.com/PISAresearch/metamask-comp/blob/master/src/contracts/BitFlipWithOrderingMetaTransaction/README.md)** Again, the smart contract maintains a 256-bit bitmap and it will reset the bitmap when 256 meta-transactions are processed. Supports up to 256 meta-transactions at a time, in any order.
+* **[MultiNonce:](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/MultiNonceMetaTransaction)** Supports unlimited concurrent and ordered transactions, but its storage overhead is 512-bit for each concurrent transaction. 
 
 We'll go through each proposal one-by-one with a high-level description and links to the code. 
 
