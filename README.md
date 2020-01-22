@@ -186,7 +186,7 @@ Benefits:
 - *Invalidate transactions:* We can invalidate transactions by simply re-using the nonce1 & nonce2 for another meta-transaction. 
 
 Problems: 
-- *Constant and high storage cost:* Two units for an additional concurrent transaction. 
+- *Constant and high storage cost:* Two unit for an additional concurrent transaction. 
 
 [Check the detailed writeup alongside the contract implementation.](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/MultiNonceMetaTransaction)
 
@@ -196,29 +196,34 @@ Problems:
 | ------------- | ------------- | ------------- | ------------- | ------------- |
 | Nonce  | Yes  | No | 256-bit | None |
 | Bitflip  | No  | Yes | Number of Tx | 1 bit per tx*  |
-| Bitflip-Ordering  | Yes  | Yes | 256-bit | Nonce |
-| MultiNonce | Yes | Yes | 256-bit*Max Concurrency | None |
+| Bitflip-Ordering  | Yes  | Yes | 512-bit | Nonce |
+| MultiNonce | Yes | Yes | 512-bit*Max Concurrency | None |
 
-We'll provide a short comparison of the above schemes. 
+Thank you for making it this far and evaluating the three new replay protection mechanisms. We will provide a short comparison of all schemes. 
 
-**Ordered.** Every scheme except Bitflip lets the user order their transactions to ensure they are processed one-by-one. Both Bitflip-ordering and MultiNonce approaches are essentially the same as the nonce approach. e.g. every time there is a new meta-transaction, we increment the primary nonce by one. 
+**Ordered meta-transactions.** Every scheme except Bitflip lets the signer enforce that their meta-transactions are procesed one-by-one. Of course, both Bitflip-ordering and MultiNonce approaches are the same as the nonce approach. e.g. every time there is a new meta-transaction, we an increment a nonce by one. 
 
-**Concurrency**. All three proposed schemes support concurrency in slightly different ways. Bitflip offers the most flexibility as each transaction simply reserves a bit in the bitmap. So the user can publish 1, or 1000 transactions, and they will all be accepted in different orders. However the storage is always increasing by 1 bit per transaction and it cannot be deleted. This brings us to Bitflip-ordering which essentially lets us reset the bitmap periodically. So the user can authorise up to 256 meta-transactions and then reset the bitmap after they are all accepted. Finally, MultiNonce can support unlimited concurrent transactions, but we must store two integers (2*uints) per concurrent job. So if we want to support up to 50 concurrent jobs, then we need to store 100 integers forever. 
+**Concurrent and in-flight meta-transactions.** All three proposed schemes support concurrent transactions. Bitflip offers the most flexibility as each meta-transaction simply reserves a bit in the bitmap. There is no limit on the number of concurrent transactions or how many can be in-flight at any given time. However, storage always increases by 1 per bit and it cannot be deleted. MultiNonce also supports unlimited concurrent and in-flight transactions, but we must store two integers (2 * uint) per concurrent job. Finally Bitflip-ordering supports 256 concurrent transactions before a reset is required. This can be extended with a sliding window, but not included here. (inquire and a copy can sent)
 
-**Storage** & Growth* Both Nonce (256-bit) and Bit-flip ordering (512 bit) have constant storage. Bit-flip ordering has the advantage that it can support up to 256 concurrent transactions, whereas nonce cannot. Bitflip's storage will always increase by 1 bit per metatransaction, whereas MultiNonce will have constant storage based on the maximum capacity of concurrent jobs required. 
+**Storage*.** We need to take care not to bloat the network. Both Nonce (256-bit) and Bitflip ordering (512 bit) have constant storage. Bit-flip has the advantage that it can also support up to 256 in-flight meta-transactions, whereas nonce cannot. As well, MultiNonce can have constant storage based on the maximum capacity of concurrent jobs required. The only proposal with linear growth is Bitflip with 1 bit per meta-transaction, but this seems reasonable for a signer issuing hundreds of jobs over its lifetime. 
 
-Overall, the type of replay protection chosen really depends on:
+We have also framed the following questions to help illustrate when a replay protection is better suited to a specific signer. 
 
-- Does the user want to issue transactions one-by-one and guarantee their order? 
-- Does the user want to issue concurrent in-flight meta-transactions?
-- What quantity of transactions does the user want to perform? 
+### Does the user want to issue transactions one-by-one and guarantee their order? 
 
-If the user wants ordered transactions with minimal storage, then Nonce is the best choice.
+If the user never wants concurrency, then Nonce is perfect. Although Bitflip requires double the storage and supports concurrent. Small tradeoff in storage for increased flexibility. 
 
-If the user wants ordered and concurrent transactions, but they are willing to wait for a batch of 256 concurrent in-flight meta-transactions to be processed before startign the next batch, then bitflip-ordering is the best choice. 
+ ### Does the user want to issue concurrent in-flight meta-transactions?
 
-If the user wants ordered and concurrent transactions, but with a limit of 3 concurrent in-flight meta-transactions, then MultiNonce might be the best choice.
+If the user can tolerate:
 
-If the user does not care for ordering, but wants no ceiling on the number of concurrent in-flight meta-transactions, then Bitflip is the best choice. 
+- Waiting for a batch of up to 256 in-flight metatransactions to be proecessed before starting the next batch, then bit-flip ordering is the best choice.
+- Wants to support 2 (or more) concurrent and in-flight meta transactions at any given time, then MultiNonce might be the best choice. 
+- If the user does not care for ordering, but wants no ceiling on the number of concurrent in-flight meta-transactions, then Bitflip is the best choice. 
+
+ ### What quantity of transactions does the user want to perform? 
+
+Only BitFlip poses a problem as it has linear storage increase. If the signer wants to perform 100k+ transactions, then the storage cost will get large over time. All other proposals have constant storage. 
+
 
 
