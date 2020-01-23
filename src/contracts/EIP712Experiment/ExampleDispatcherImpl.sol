@@ -18,7 +18,7 @@ contract TransferDispatcherImplementation is
     //////////////////////////////
     // EIP712Dispatcher sidecar //
     // type
-    string public constant TRANSFER_TYPE = "transfer(address sender,uint amount,address to)";
+    string public constant TRANSFER_TYPE = "transfer(uint amount,address to)";
 
     // content hash
     function encode_transfer(uint amount, address to) public pure 
