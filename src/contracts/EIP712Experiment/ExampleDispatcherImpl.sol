@@ -1,6 +1,6 @@
 import "./EIP712Dispatcher.sol";
 
-contract TestImplementation is 
+contract TransferDispatcherImplementation is 
     // is an EIP 712 Dispatcher
     EIP712Dispatcher, 
     // GSN msg sender functionality
@@ -17,20 +17,20 @@ contract TestImplementation is
     //////////////////////////////
     // EIP712Dispatcher sidecar //
     // type
-    string public constant TEST_FUNCTION_TYPE = "testFunction(address sender,uint amount,address to)";
+    string public constant TRANSFER_TYPE = "transfer(address sender,uint amount,address to)";
 
     // content hash
-    function encode_testFunction(uint amount, address to) public pure 
+    function encode_transfer(uint amount, address to) public pure 
     returns(bytes32 contentHash, string memory contentType) {
-        contentHash = keccak256(abi.encode(keccak256(abi.encodePacked(TEST_FUNCTION_TYPE)), amount, to));
-        contentType = TEST_FUNCTION_TYPE;
+        contentHash = keccak256(abi.encode(keccak256(abi.encodePacked(TRANSFER_TYPE)), amount, to));
+        contentType = TRANSFER_TYPE;
     }
     // EIP712Dispatcher sidecar //
     //////////////////////////////
 
     
     mapping(address => uint) balances;
-    function testFunction(uint amount, address to) public {
+    function transfer(uint amount, address to) public {
         address sender = _msgSender();
         require(balances[sender] >= amount, "Not enough balance");
         require(balances[to] + amount >= balances[to], "Overflow");
