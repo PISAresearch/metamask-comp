@@ -1,5 +1,7 @@
 # Addendum - EIP 712 Experiment
 
+**Still an experiment - the contract fulfils it's goals, but currently lacks tests**
+
 ## Implementers guidelines
 
 To implement MetaTransactions in your contract, do the following
@@ -26,9 +28,14 @@ All that is noted here is that the protection must be encoded into a 712 type.
 
 In order to correctly check authorisation the dispatch method must encode the provided data and check the signature. Since the 712 encoding currently requires a hard coded encoding function for each of the types employed. In the context of a contract that corresponds to a type for each unique argument signature employed by the contract. For simplicity we enforce that all functions that can be called from dispatch have a corresponding encoding function. A Dapp developer is responsible for implementing these encoded functions, called here "sidecar" functions. These sidecar functions must be named by applying a specific prefix "encode_" to function they augment. They must also have the the same arguments.
 
-eg. function transfer(uint amount, address to)
+eg. 
+```
+function transfer(uint amount, address to)
+```
 has sidecar:
+```
 function encode_transfer(uint amount, address to)
+```
 The sidecar function should encode and hash the provided data in an EIP 712 manner.
 
 ### 3. Msg.sender lookup
