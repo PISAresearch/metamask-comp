@@ -1,7 +1,7 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
 contract MultiNonceMetaTransaction {
     mapping(address => mapping(uint => uint)) public multiNonce;
@@ -21,7 +21,7 @@ contract MultiNonceMetaTransaction {
 
         bytes32 h = keccak256(abi.encode(address(this), _msgHash, _nonce1, _nonce2));
         require(_signer == ECDSA.recover(ECDSA.toEthSignedMessageHash(h), _sig), "Bad signature");
-        require(_nonce2 > multiNonce[_signer][_nonce1], "Nonce2 is too small");
+        require(_nonce2 == (multiNonce[_signer][_nonce1]+1), "One-at-a-time order enforced. Nonce2 is too small");
 
         multiNonce[_signer][_nonce1] = _nonce2;
     }

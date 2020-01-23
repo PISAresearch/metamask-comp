@@ -74,20 +74,27 @@ describe("BitFlip MetaTransaction", () => {
   ): Promise<BigNumber> {
     const flipped = flipBit(bitmap, index);
 
+    const message = "i am here";
+    const encodedMessage = defaultAbiCoder.encode(["string"], [message]);
+    const encodedReplayProtection = defaultAbiCoder.encode(
+      ["uint", "uint"],
+      [nonce, flipped]
+    );
+
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "bytes32"],
       [
         broadcaster.address,
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-        nonce,
-        flipped
+        keccak256(encodedMessage),
+        keccak256(encodedReplayProtection)
       ]
     );
+
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
-      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      keccak256(encodedMessage),
       signer.address,
       nonce,
       flipped,
@@ -105,22 +112,29 @@ describe("BitFlip MetaTransaction", () => {
     const nonce = new BigNumber("0");
     const bitmap = new BigNumber("0");
 
+    const message = "i am here";
+    const encodedMessage = defaultAbiCoder.encode(["string"], [message]);
+    const encodedReplayProtection = defaultAbiCoder.encode(
+      ["uint", "uint"],
+      [nonce, bitmap]
+    );
+
     // Signer issues a command for the 0th index of the nonce
     const encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+      ["address", "bytes32", "bytes32"],
       [
         broadcaster.address,
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-        nonce,
-        bitmap
+        keccak256(encodedMessage),
+        keccak256(encodedReplayProtection)
       ]
     );
+
     const h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
 
     await expect(
       broadcaster.isMetaTransactionApproved(
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        keccak256(encodedMessage),
         signer.address,
         nonce,
         bitmap,
@@ -155,39 +169,46 @@ describe("BitFlip MetaTransaction", () => {
     let nonce = new BigNumber("0");
 
     // Flip the 0th index.
-    let update = flipBit(new BigNumber("0"), new BigNumber("1"));
+    let toFlip = flipBit(new BigNumber("0"), new BigNumber("1"));
+
+    const message = "i am here";
+    const encodedMessage = defaultAbiCoder.encode(["string"], [message]);
+    const encodedReplayProtection = defaultAbiCoder.encode(
+      ["uint", "uint"],
+      [nonce, toFlip]
+    );
 
     // Signer issues a command for the 0th index of the nonce
-    let encoded = defaultAbiCoder.encode(
-      ["address", "bytes32", "uint", "uint"],
+    const encoded = defaultAbiCoder.encode(
+      ["address", "bytes32", "bytes32"],
       [
         broadcaster.address,
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-        nonce,
-        update
+        keccak256(encodedMessage),
+        keccak256(encodedReplayProtection)
       ]
     );
+
     let h = keccak256(encoded);
     const sig = await signer.signMessage(arrayify(h));
     await broadcaster.isMetaTransactionApproved(
-      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      keccak256(encodedMessage),
       signer.address,
       nonce,
-      update,
+      toFlip,
       sig
     );
 
     // Issue the command like a boyo.
-    expect(await broadcaster.isBitmapSet(signer.address, nonce, update)).to.be
+    expect(await broadcaster.isBitmapSet(signer.address, nonce, toFlip)).to.be
       .true;
 
     // Should fail as bitmap is already set
     await expect(
       broadcaster.isMetaTransactionApproved(
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        keccak256(encodedMessage),
         signer.address,
         nonce,
-        update,
+        toFlip,
         sig
       )
     ).to.be.reverted;

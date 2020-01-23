@@ -17,18 +17,17 @@ contract BitFlipMetaTransaction {
     function isMetaTransactionApproved(bytes32 _h, address _signer, uint _index, uint _toFlip, bytes memory _sig) public {
 
         // EIP712 can be included in "h", no need to enforce in standard.
-        verifySignature(_signer, _h, keccak256(abi.encode(_signer, _index, _toFlip), _sig));
-        replayProtection(_signer, _index, _toFlip); 
+        verifySignature(_signer, _h, keccak256(abi.encode(_index, _toFlip)), _sig);
+        replayProtection(_signer, _index, _toFlip);
     }
 
-    function verifySignature(address _signer, bytes32 _data, bytes32 _replayprotection, bytes _sig, ) public {
-        bytes32 h = keccak256(abi.encode(address(this), _data, _replayprotection));
+    function verifySignature(address _signer, bytes32 _h, bytes32 _replayprotection, bytes memory _sig) public view {
+        bytes32 h = keccak256(abi.encode(address(this), _h, _replayprotection));
         require(_signer == ECDSA.recover(ECDSA.toEthSignedMessageHash(h), _sig), "Bad signature");
     }
 
-    function replayProtection(address _signer, uint _index, uint _toFlip) { 
+    function replayProtection(address _signer, uint _index, uint _toFlip) public {
         require(bitmaps[_signer][_index] & _toFlip != _toFlip, "Nonce already flipped.");
-
         bitmaps[_signer][_index] = bitmaps[_signer][_index] | _toFlip;
     }
 

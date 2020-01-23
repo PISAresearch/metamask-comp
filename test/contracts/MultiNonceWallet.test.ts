@@ -7,10 +7,10 @@ import {
   getWallets,
   loadFixture
 } from "ethereum-waffle";
-import * as Broadcaster from "../../build/BroadcasterWithMultiNonce.json";
+import * as Broadcaster from "../../build/BroadcasterMN.json";
 import { BigNumber, arrayify, defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Provider, JsonRpcProvider } from "ethers/providers";
-import { Wallet, Contract } from "ethers";
+import { Wallet } from "ethers";
 
 const expect = chai.expect;
 chai.use(solidity);
@@ -53,10 +53,12 @@ describe("MultiNonce MetaTransaction", () => {
 
     // Flip the 0th index.
     let nonce1 = new BigNumber("1");
-    const nonce2 = new BigNumber("2");
+    let fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    let nonce2 = fetchNonce.add(new BigNumber("1"));
 
     const message =
       "0x0000000000000000000000000000000000000000000000000000000000000000";
+
     let sig = await getMetaTxSig(
       broadcaster.address,
       message,
@@ -66,17 +68,19 @@ describe("MultiNonce MetaTransaction", () => {
     );
 
     await broadcaster.isMetaTransactionApproved(
-      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      message,
       signer.address,
       nonce1,
       nonce2,
       sig
     );
 
-    let fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
     expect(fetchNonce.toString()).to.eq(nonce2.toString());
 
     nonce1 = new BigNumber("2");
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    nonce2 = fetchNonce.add(new BigNumber("1"));
 
     sig = await getMetaTxSig(
       broadcaster.address,
@@ -103,7 +107,8 @@ describe("MultiNonce MetaTransaction", () => {
 
     // Flip the 0th index.
     const nonce1 = new BigNumber("1");
-    const oldNonce2 = new BigNumber("10");
+    let fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    const oldNonce2 = fetchNonce.add(new BigNumber("1"));
 
     const message =
       "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -123,16 +128,17 @@ describe("MultiNonce MetaTransaction", () => {
       sig
     );
 
-    let fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
     expect(fetchNonce.toString()).to.eq(oldNonce2.toString());
 
-    const newNonce2 = new BigNumber("2");
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    const tooSmall2 = fetchNonce.sub(new BigNumber("1"));
 
     sig = await getMetaTxSig(
       broadcaster.address,
       message,
       nonce1,
-      newNonce2,
+      tooSmall2,
       signer
     );
 
@@ -141,7 +147,31 @@ describe("MultiNonce MetaTransaction", () => {
         message,
         signer.address,
         nonce1,
-        newNonce2,
+        tooSmall2,
+        sig
+      )
+    ).to.be.reverted;
+
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    expect(fetchNonce.toString()).to.eq(oldNonce2.toString());
+
+    fetchNonce = await broadcaster.getNonce(signer.address, nonce1);
+    const tooLarge2 = fetchNonce.add(new BigNumber("2"));
+
+    sig = await getMetaTxSig(
+      broadcaster.address,
+      message,
+      nonce1,
+      tooLarge2,
+      signer
+    );
+
+    await expect(
+      broadcaster.isMetaTransactionApproved(
+        message,
+        signer.address,
+        nonce1,
+        tooLarge2,
         sig
       )
     ).to.be.reverted;

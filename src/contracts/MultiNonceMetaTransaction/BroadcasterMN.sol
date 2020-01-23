@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "./MultiNonceMetaTransaction.sol";
 
-contract BroadcasterWithMultiNonce is MultiNonceMetaTransaction {
+contract BroadcasterMN is MultiNonceMetaTransaction {
 
     event PublicBroadcast(string message);
 
