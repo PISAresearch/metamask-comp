@@ -232,4 +232,8 @@ If the user can tolerate:
 Only BitFlip poses a problem as it has linear storage increase. If the signer wants to perform 100k+ transactions, then the storage cost will get large over time. All other proposals have constant storage. 
 
 
+## Addendum - EIP Experiment
+As a side effort, as part of this contest we experimented with using the EIP712 encoding format, and what impact
+that would have on a meta transaction recipient contract. Our solution isnt fully complete - it lacks tests. More
+details can be found [here](./src/contracts.EIP712Experiment); 
 
