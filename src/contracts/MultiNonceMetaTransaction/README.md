@@ -9,12 +9,13 @@ To overcome that issue, we propose MultiNonce. A good way to conceptualise Multi
 Let's illustrate it with an example: 
 
 ```
-Slot(nonce1) Nonce (nonce2)  
+Slot .       Nonce  
 [0]   ---->    2
 [1]   ---->.   3
 [2]   ---->    0
  
 ```
+Note: slot = nonce1, and nonce = 2. 
 
 If we want to send a meta-transaction using slot [0], then nonce1=0 and nonce2=3. This is because the largest nonce seen so far by the contract for slot [0] is nonce 2. So we need a larger nonce before sending the meta-transaction. 
 
@@ -22,38 +23,48 @@ What is nice about the proposal is that we can send up to N concurrent and in-fl
 
 ## How does the replay protection work? 
 
-As mentioned, we have both a nonce and a bitmap. The former lets us order transactions, the latter lets us support concurrent and in-flight meta-transactions. 
+We have two nonces:
 
-### Record latest nonce and bitmap 
+- *nonce1:* Concurrency slot. 
+- *nonce2:* The ith job in a given slot. 
 
-The replay protection contract stores a mapping of the bitmaps and a mapping for the latest nonce: 
-
-```
-mapping(address => mapping(uint => uint)) bitmaps; 
-mapping(address => uint) nonces; 
-
-bitmaps[nonce1] = 0000000......0000000000;
-```
-
-### Enforcing order for meta-transactions
-
-Unlike proposal 1, there is a nonce for ordering and we require it to be incremented one-at-a-time. 
+In the contract, it is implemented:
 
 ```
-require(_nonce1 == nonces[_signer] || _nonce == nonces[_signer]+1, "Nonce must be the same or incremented by one");
-```
-Every time nonce1 is incremented, we will delete the previous bitmap: 
-
-```
-// Delete old bitmap, keep new nonce
-if(_nonce == nonces[_signer]+1) {
-   delete bitmaps[_signer][_nonce-1];
-   nonces[_signer] = _nonce;
-}
+mapping(address => mapping(uint => uint)) public multiNonce;
 ```
 
-As a result, there is only one bitmap in action at any time. So the replay protection can support:
-- Ordered transactions (1,2,3....,)
-- 256 concurrent and in-flight meta-transactions 
+When the replay protection contract receives a new meta-transaction, it performs:
 
-We have a demo on how to extend it into a sliding-window approach to support more than 256 concurrent transactions, but it doesn't explain the idea as clearly as above. 
+```
+For the slot, nonce1, is nonce2 the largest nonce witnessed so far?
+````
+
+So in a way, it is essentially the same as the Nonce standard. Order is perserved per slot, but with the option to perform concurrent and in-flight meta-tranasactions using the slots. 
+
+We implement it: 
+
+```
+    /**
+     * Supports concurrent transactions and order.
+     * - Concurrency is achieved with nonce1
+     * - Order is achieved with nonce2
+     * @param _signer Approver's address
+     * @param _msgHash Application-specific content
+     * @param _nonce1 Keeps track of latest nonce2
+     * @param _nonce2 Replace-by-version
+     * @param _sig Signature
+     */
+    function isMetaTransactionApproved(bytes32 _msgHash, address _signer, uint _nonce1,
+    uint _nonce2, bytes memory _sig) public {
+
+        bytes32 h = keccak256(abi.encode(address(this), _msgHash, _nonce1, _nonce2));
+        require(_signer == ECDSA.recover(ECDSA.toEthSignedMessageHash(h), _sig), "Bad signature");
+        
+        // If we want to enforce one-by-one acceptance. Otherwise can just do _nonce2 > ...
+        require(_nonce2 == multiNonce[_signer][_nonce1]+1, "Nonce2 is too small");
+
+        multiNonce[_signer][_nonce1] = _nonce2;
+    }
+```
+
