@@ -39,7 +39,7 @@ uint newBitmap = oldBitmap | toFlip; // "00000....000001"
 
 ### How do we prepare the "bit to flip" in Javascript? 
 
-Super easy. Just one 2^index and an addition. 
+In order to flip a "0" bit to a "1" bit, we only need to perform two operations. An exponentiation and an addition. We've provided an example below: 
 
 ``` 
    /**
@@ -52,7 +52,7 @@ Super easy. Just one 2^index and an addition.
   }
 ```
 
-Given a bitmap and an index, we can simply flip the bit. 
+Given a bitmap and an index, we can flip the bit from "0" to "1". 
 
 [We have also included unit tests to verify that everything works as intended.](https://github.com/PISAresearch/metamask-comp/blob/master/test/contracts/BitFlipWallet.test.ts)
 
