@@ -24,17 +24,17 @@ A very good in-depth explanation can be found [here](https://medium.com/@imolfar
 To perform an AND operation:
 
 ``` 
-uint oldBitmap = 0;
-uint oldBitmap = 1; 
-uint newBitmap = oldBitmap & toFlip; 
+uint oldBitmap = 0; // "00000.....00000"
+uint toFlip = 1; // "00000.....00001"
+uint newBitmap = oldBitmap & toFlip;  // "00000....000000"
 ``` 
 
 To perform an OR operation: 
 
 ``` 
-uint oldBitmap = 0;
-uint oldBitmap = 1; 
-uint newBitmap = oldBitmap | toFlip; 
+uint oldBitmap = 0; // "00000.....00000"
+uint toFlip = 1; // "00000.....00001"
+uint newBitmap = oldBitmap | toFlip; // "00000....000001"
 ``` 
 
 ### How do we prepare the "bit to flip" in Javascript? 
