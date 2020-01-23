@@ -61,6 +61,10 @@ Given a bitmap and an index, we can simply flip the bit.
 [We have also included unit tests to verify that everything works as intended.](https://github.com/PISAresearch/metamask-comp/blob/master/test/contracts/BitFlipWalletWithOrdering.test.ts)
 
 
+## How does the replay protection work? 
+
+As mentioned, we have both a nonce and a bitmap. The former lets us order transactions, the latter lets us support concurrent and in-flight meta-transactions. 
+
 ### Record latest nonce and bitmap 
 
 The replay protection contract stores a mapping of the bitmaps and a mapping for the latest nonce: 
