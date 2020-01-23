@@ -3,6 +3,7 @@
 ## Implementers guidelines
 
 To implement MetaTransactions in your contract, do the following
+
 0. Inherit from EIP712Dispatcher
 1. Inherit from a replay protect contract matching IReplayProtection
 1. Implement a side car function for every public function that you wish to have metatransaction support.
