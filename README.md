@@ -1,4 +1,4 @@
-Submission by Chris Buckland & Patrick McCorry, PISA. 
+Submission by Chris Buckland (yahgwai) & Patrick McCorry (stonecoldpat), PISA. 
 
 # Towards a meta-transaction standard
 
