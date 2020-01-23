@@ -1,6 +1,6 @@
 # Addendum - EIP 712 Experiment
 
-**Still an experiment - the contract fulfils it's goals, but currently lacks tests**
+Still an experiment - the contract fulfils it's goals, but currently lacks tests
 
 ## Implementers guidelines
 
