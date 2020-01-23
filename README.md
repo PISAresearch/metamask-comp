@@ -72,8 +72,8 @@ It is a single function interface that can be used in any smart contract to supp
 
 Additional two points: 
 
-* **Generic replay protection support**:  I is easy to encode it into a *bytes replayProtection*  and then decode the relevant values in the replay protection contract. As such, the replay protection function is agnostic to the mechanism. For sake of clarity, we haven't done it here. 
-* **EIP712 standard support**: We will need to remove the signature check from the replay protection and instead verify the signature of the signTypeV4. 
+* **Generic replay protection support**:  We can easily encode nonce1, nonce2 a *bytes replayProtection*  and then decode the relevant values in the replay protection contract. As such, the replay protection function is agnostic to the mechanism and can extended to other mechanisms. For sake of clarity, we haven't done it here. 
+* **EIP712 standard support**: We will need to remove the signature check from the replay protection and instead verify the signature of the signTypeV4. As well, we could include the arguments in this function and check everything for a single signature. 
 
 ## Replay protection proposals 
 
@@ -86,7 +86,7 @@ The replay protection contract stores a list of bitmaps:
 ```
 mapping(uint => uint) bitmaps; 
 
-uint bitmap[nonce1] = 00000000....000000000
+uint bitmap[nonce1] = 00000000....000000000; // In reality, its a uint number, but expressing in bits for clarity
 ```
 
 When authorising a new meta-transaction, we simply include a new bitmap that flips a single bit: 
@@ -95,7 +95,7 @@ When authorising a new meta-transaction, we simply include a new bitmap that fli
 bytes _h = "0x0...";
 address signer = "0x0....":
 uint nonce1 (index) = 0;
-uint nonce2 (bitmap) = "0000000000100000"; 
+uint nonce2 (bitmap) = "0000000000100000"; // In reality, its a uint number, but expressing in bits for clarity
 bytes sig = "0x00....";
 
 ```
@@ -126,7 +126,7 @@ mapping(address => address(uint => uint)) bitmaps;
 mapping(address => uint) nonce; 
 ```
 
-When authorising a new meta-transaction, the signer can chose: 
+When authorising a new meta-transaction, the signer can choose: 
  * Increment the nonce, delete the old bitmap and create a fresh bitmap 
  * Re-use the same nonce and flip a bit in the bitmap. 
  
@@ -140,7 +140,7 @@ if(_nonce == nonces[_signer]+1) {
 ```
 
 Benefits: 
-- *Constant storage:* Only 3 uints per user. One for the largest nonce so far, and one for the mapping to the bitmap. 
+- *Constant storage:* Only 3 uints per user. One for the largest nonce so far, and one for the bitmap mapping.
 - *Ordered transactions:* Just increment the nonce for every new transaction. 
 - *Concurrent transactions:* Up to 256 concurrent and in-flight meta transactions at a time. 
 - *Invalidate transactions:* Can invalidate issued meta-transactions by incrementing the nonce (e.g. increment to nonce=3, then the bitmap for nonce=2 are now invalid). 
@@ -173,7 +173,7 @@ bytes sig = "0x00....";
 
 ```
 
-The meta-transaction in the above example his is the 10th transaction for concurrent slot 0. But what does that really mean? 
+The meta-transaction in the above example, it is the 10th transaction for concurrent slot 0. But what does that really mean? 
  - Nonce 1: We increase the capacity of our concurrent transactions 
  - Nonce 2: Replace-by-version, we just process the meta-transactions in order. 
  
@@ -181,7 +181,7 @@ What if we want to fulfil 40 concurrent and in-flight meta-transactions at any t
 
 Benefits:
 - *Concurrent tx:* We can support any number of concurrent transactions.
-- *Continuous concurrency:* We can sustain a capacity of concurrent transactions at any given time. 
+- *Continuous concurrency:* We can sustain a capacity of N concurrent transactions at any given time (and this can be increased at any time). 
 - *Ordered transactions:* We can simply default to the standard Nonce approach for a given slot. So all meta-transactions for a given nonce1 will be ordered. 
 - *Invalidate transactions:* We can invalidate transactions by simply re-using the nonce1 & nonce2 for another meta-transaction. 
 
@@ -199,15 +199,19 @@ Problems:
 | Bitflip-Ordering  | Yes  | Yes | 512-bit | Nonce |
 | MultiNonce | Yes | Yes | 512-bit*Max Concurrency | None |
 
-Thank you for making it this far and evaluating the three new replay protection mechanisms. We will provide a short comparison of all schemes. 
+Thank you for making it this far and evaluating the three new replay protection mechanisms. We provide a short comparison of all schemes. 
 
 **Ordered meta-transactions.** Every scheme except Bitflip lets the signer enforce that their meta-transactions are procesed one-by-one. Of course, both Bitflip-ordering and MultiNonce approaches are the same as the nonce approach. e.g. every time there is a new meta-transaction, we an increment a nonce by one. 
 
 **Concurrent and in-flight meta-transactions.** All three proposed schemes support concurrent transactions. Bitflip offers the most flexibility as each meta-transaction simply reserves a bit in the bitmap. There is no limit on the number of concurrent transactions or how many can be in-flight at any given time. However, storage always increases by 1 per bit and it cannot be deleted. MultiNonce also supports unlimited concurrent and in-flight transactions, but we must store two integers (2 * uint) per concurrent job. Finally Bitflip-ordering supports 256 concurrent transactions before a reset is required. This can be extended with a sliding window, but not included here. (inquire and a copy can sent)
 
-**Storage.** We need to take care not to bloat the network. Both Nonce (256-bit) and Bitflip ordering (512 bit) have constant storage. Bit-flip has the advantage that it can also support up to 256 in-flight meta-transactions, whereas nonce cannot. As well, MultiNonce can have constant storage based on the maximum capacity of concurrent jobs required. The only proposal with linear growth is Bitflip with 1 bit per meta-transaction, but this seems reasonable for a signer issuing hundreds of jobs over its lifetime. 
+**Storage.** We need to take care not to bloat the network. Both Nonce (256-bit) and Bitflip ordering (512 bit) have constant storage. Bit-flip is advantagous over Nonce as it can also support up to 256 in-flight meta-transactions, whereas Nonce cannot. As well, MultiNonce can have constant storage based on the maximum capacity of concurrent jobs required. The only proposal with linear growth is Bitflip with 1 bit per meta-transaction, but this seems reasonable for a signer issuing hundreds of jobs over its lifetime. 
 
-We have also framed the following questions to help illustrate when a replay protection is better suited to a specific signer. 
+We have also framed the following questions to help illustrate when a replay protection is better suited to a specific signer.
+
+### Which replay protection should we implement as a standard?
+
+All, one or none. Because the function interface is agnostic to the mechanism, the dapp developer can select the replay protection that suits their needs. Patrick prefers Bitflip-ordering, 
 
 ### Does the user want to issue transactions one-by-one and guarantee their order? 
 
