@@ -13,7 +13,7 @@ To implement MetaTransactions in your contract, do the following
 3. Remove any function calls of the form `this.function()` and `this.call()`. Public functions cannot be called internally using call instructions or this. syntax. Instead the function must be invoked directly. eg `function()`
 
 
-## EIP712Dispatcher Goals and Solution
+## [EIP712Dispatcher](./EIP712Dispatcher.sol) Goals and Solution
 
 ### 1. Support standard transactions
 **Goal:** An implementing contract will likely want to continue supporting standard transactions even if it support meta transactions. As such the framework should allow this easily, indeed the development experience should change as little as possible. Ethereum transactions are signed using the eth_sign message, and cannot be signed using the eth_signTypedData method. As such existing functions should not try to valid data as if it had been encoded with the `encodeData` function specified in 712. These standard methods must also still exist so that they can be called by other contracts.

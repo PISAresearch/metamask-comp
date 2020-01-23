@@ -233,9 +233,7 @@ Only BitFlip poses a problem as it has linear storage increase. If the signer wa
 
 
 ## [Addendum 1 - EIP 712 Experiment](./src/contracts/EIP712Experiment)
-As a side effort we experimented with using the EIP712 encoding format, and what impact
-that would have on a meta transaction recipient contract. Our solution isnt fully complete - it lacks tests. More
-details can be found [here](./src/contracts/EIP712Experiment); 
+As a side effort we experimented with using the EIP712 encoding format, and what impact that would have on a meta transaction recipient contract. Our solution lacks tests, but fulfilled its experimental goals. More details can be found [here](./src/contracts/EIP712Experiment); 
 
 ## [Addendum 2 - Sliding window bitflip experiment](./src/contracts/EIP712Experiment/ReplayProtection.sol)
 An additional replay protection that involves a sliding window to maintain a continuous stream of concurrent transactions, and a low constant storage. It does so by rotating through a series of primary nonces, flipping bits in a current nonce and incrementing teh primary nonce at another index. Still untested, experimental work.
