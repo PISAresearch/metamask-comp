@@ -9,9 +9,9 @@ To overcome that issue, we propose MultiNonce. A good way to conceptualise Multi
 Let's illustrate it with an example: 
 
 ```
-Slot .       Nonce  
+Slot        Nonce  
 [0]   ---->    2
-[1]   ---->.   3
+[1]   ---->   3
 [2]   ---->    0
  
 ```
