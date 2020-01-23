@@ -15,7 +15,7 @@ import { Wallet, Contract } from "ethers";
 const expect = chai.expect;
 chai.use(solidity);
 
-describe("Replay Protection with optional ordering", () => {
+describe("BitFlip with optional ordering MetaTransaction", () => {
   const provider = createMockProvider();
   const [wallet] = getWallets(provider);
 
