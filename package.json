@@ -1,6 +1,7 @@
 {
   "scripts": {
     "build-test": "npm run build && npm run test",
+    "build-just": "waffle waffle.json",
     "build": "waffle waffle.json && npm run build-types",
     "build-types": "typechain --target ethers --outDir ./build ./build/**/*.json",
     "test": "NODE_ENV=test mocha --require ts-node/register --extension 'test.ts' './test/**/*.test.ts' --exit"
