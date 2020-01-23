@@ -237,5 +237,5 @@ As a side effort we experimented with using the EIP712 encoding format, and what
 that would have on a meta transaction recipient contract. Our solution isnt fully complete - it lacks tests. More
 details can be found [here](./src/contracts/EIP712Experiment); 
 
-## [Addendum 2 - Sliding window bitflip experiment (./src/contracts/EIP712Experiment/ReplayProtection.sol)]
+## [Addendum 2 - Sliding window bitflip experiment](./src/contracts/EIP712Experiment/ReplayProtection.sol)
 An additional replay protection that involves a sliding window to maintain a continuous stream of concurrent transactions, and a low constant storage. It does so by rotating through a series of primary nonces, flipping bits in a current nonce and incrementing teh primary nonce at another index. Still untested, experimental work.
