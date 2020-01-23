@@ -1,3 +1,5 @@
+Submission by Chris Buckland & Patrick McCorry, PISA. 
+
 # Towards a meta-transaction standard
 
 tldr; We propose a single function, isMetaTransactionApproved(), that can be included in any smart contract. We have three different replay protection proposals, Bitflip, Bitflip-ordering and MultiNonce, that can be implemented in this function. Our goal is to support concurrent in-flight meta-transactions with minimum storage requirements. Afterwards, we provide an overview of the any.sender architecture that is close to ready for launch. 
