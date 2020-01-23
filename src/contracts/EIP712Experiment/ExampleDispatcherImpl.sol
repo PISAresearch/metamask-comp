@@ -1,4 +1,5 @@
 import "./EIP712Dispatcher.sol";
+import "./ReplayProtection.sol";
 
 contract TransferDispatcherImplementation is 
     // is an EIP 712 Dispatcher

@@ -1,22 +1,8 @@
 pragma solidity ^0.5.11;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol";
-import "./Lib.sol";
+import "./ReplayProtection.sol";
 
-
-interface IReplayProtection {
-    function replayProtection(address sender, uint nonce1, uint nonce2) external;
-}
-
-// The simplest replay protection - others are available in this repo.
-contract BitFlipReplayProtection is IReplayProtection {
-    mapping(address => mapping(uint => uint)) public bitmaps;
-
-    function replayProtection(address _signer, uint _index, uint _toFlip) public {
-        require(bitmaps[_signer][_index] & _toFlip != _toFlip, "Nonce already flipped.");
-        bitmaps[_signer][_index] = bitmaps[_signer][_index] | _toFlip;
-    }
-}
 
 /**
  * Base EIP712 Dispatcher contract
