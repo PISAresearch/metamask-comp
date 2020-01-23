@@ -1,6 +1,3 @@
-import "./Lib.sol";
-
-
 interface IReplayProtection {
     function replayProtection(address sender, uint nonce1, uint nonce2) external;
 }
@@ -16,9 +13,8 @@ contract BitFlipReplayProtection is IReplayProtection {
 }
 
 
-/**
- * Sliding window bitflip - still untested, experimental.
- */
+
+// Sliding window bitflip - still untested, experimental. 
 contract BitFlipSlidingWindow is IReplayProtection {
     struct Nonce {
         uint[3] nonce1s;
