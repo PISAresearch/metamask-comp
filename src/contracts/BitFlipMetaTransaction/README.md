@@ -1,11 +1,65 @@
 
-## Proposal 1: Bitflip MetaTransactions
+# Proposal 1: Bitflip MetaTransactions
 
-Our contract will maintain a list of bitmaps and each meta-transaction will reserve a single bit in a map. 
+Our contract maintaisn a list of bitmaps and all meta-transactions reserve a single bit in a map. When a meta-transaction is processed, it will flip a bit for the on-chain bitmap. Because the bit is flipped, it can never be processed again. Our approach supports unlimited number of concurrent and in-flight meta-transactions. But it does linearly increase on-chain storage costs by 1 bit. 
 
-The benefit of this approach is that it can support an unlimited number of concurrent in-flight meta-transactions as each job will simplify flip their reserved bit.
+We'll provide some background on bitwise operations before describing the replay contract. 
 
-As mentioned, the contract stores a list of bitmaps;  
+## Background on bitwise operations
+
+### How do bitwise operations work? 
+
+Just a reminder of the bitwise operations: 
+
+``` 
+AND: Both bits must be 1 to be true
+OR: At least one of the bits have to be 1 (true)
+
+```
+
+### How do we flip bits in Solidity? 
+
+A very good in-depth explanation can be found [here](https://medium.com/@imolfar/bitwise-operations-and-bit-manipulation-in-solidity-ethereum-1751f3d2e216). 
+
+To perform an AND operation:
+
+``` 
+uint oldBitmap = 0;
+uint oldBitmap = 1; 
+uint newBitmap = oldBitmap & toFlip; 
+``` 
+
+To perform an OR operation: 
+
+``` 
+uint oldBitmap = 0;
+uint oldBitmap = 1; 
+uint newBitmap = oldBitmap | toFlip; 
+``` 
+
+### How do we prepare the "bit to flip" in Javascript? 
+
+Super easy. Just one 2^index and an addition. 
+
+``` 
+   /**
+   * Flip a bit!
+   * @param bitmap 256 bits
+   * @param toFlip index to flip (0,...,255)
+   */
+  function flipBit(bitmap: BigNumber, indexToFlip: BigNumber): BigNumber {
+    return new BigNumber(bits).add(new BigNumber(2).pow(indexToFlip));
+  }
+```
+
+Given a bitmap and an index, we can simply flip the bit. 
+
+[We have also included unit tests to verify that everything works as intended.](https://github.com/PISAresearch/metamask-comp/blob/master/test/contracts/BitFlipWallet.test.ts)
+
+
+## How does the replay protection contract work?
+
+The contract stores a list of bitmaps;  
 
 ```
 mapping(uint => uint) bitmaps; 
@@ -22,15 +76,7 @@ For sake of clarity in this section, we will call *nonce1 -> index* and *nonce2 
 We will break the descriptio into two parts
 - How does the on-chain contract verify if a bit has been flipped? 
 - How does the on-chain contract flip a bit in the bitmap? 
-
-### Reminder of bitwise operations
-
-Just a reminder of the bitwise operations: 
-
-``` 
-AND: Both bits must be 1 to be true
-OR: At least one of the bits have to be 1 (true)
-```
+e
 
 ### How to verify on-chain that a bit is not flipped
 
