@@ -188,7 +188,7 @@ Benefits:
 - *Invalidate transactions:* We can invalidate transactions by simply re-using the nonce1 & nonce2 for another meta-transaction. 
 
 Problems: 
-- *Constant and high storage cost:* Two unit for an additional concurrent transaction. 
+- *Constant but high storage cost:* Two unit for an additional concurrent transaction. 
 
 [Check the detailed writeup alongside the contract implementation.](https://github.com/PISAresearch/metamask-comp/tree/master/src/contracts/MultiNonceMetaTransaction)
 
@@ -232,8 +232,8 @@ If the user can tolerate:
 Only BitFlip poses a problem as it has linear storage increase. If the signer wants to perform 100k+ transactions, then the storage cost will get large over time. All other proposals have constant storage. 
 
 
-## Addendum - EIP Experiment
+## Addendum - EIP 712 Experiment
 As a side effort we experimented with using the EIP712 encoding format, and what impact
 that would have on a meta transaction recipient contract. Our solution isnt fully complete - it lacks tests. More
-details can be found [here](./src/contracts.EIP712Experiment); 
+details can be found [here](./src/contracts/EIP712Experiment/README.ms); 
 
