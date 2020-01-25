@@ -56,7 +56,7 @@ contract EIP712Dispatcher is IReplayProtection {
         bytes4 sidecarFunctionSignature = bytes4(keccak256(
             abi.encodePacked(
                 StringUtils.concat(
-                    StringUtils.toSlice(functionSignature), StringUtils.toSlice("encode_"))
+                    StringUtils.toSlice("encode_"), StringUtils.toSlice(functionSignature))
                 )
             )
         );
