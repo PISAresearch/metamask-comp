@@ -11,7 +11,7 @@
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
-    "ethereum-waffle": "^2.3.0",
+    "ethereum-waffle": "^4.0.10",
     "ethers": "^4.0.43",
     "install": "^0.13.0",
     "mocha": "^7.0.0",
